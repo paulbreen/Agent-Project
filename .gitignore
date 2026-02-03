@@ -1,0 +1,29 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+appsettings.Development.json
+
+# Node / React
+src/web/node_modules/
+src/web/dist/
+src/web/.env
+src/web/.env.local
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Build
+publish/
+out/

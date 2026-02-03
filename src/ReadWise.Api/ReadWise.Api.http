@@ -1,0 +1,6 @@
+@ReadWise.Api_HostAddress = http://localhost:5287
+
+GET {{ReadWise.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReadWise.Api/ReadWise.Api.csproj" />
+    <Project Path="src/ReadWise.Core/ReadWise.Core.csproj" />
+    <Project Path="src/ReadWise.Infrastructure/ReadWise.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ReadWise.Api.Tests/ReadWise.Api.Tests.csproj" />
+    <Project Path="tests/ReadWise.Core.Tests/ReadWise.Core.Tests.csproj" />
+  </Folder>
+</Solution>
