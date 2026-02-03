@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { Article } from '../types/article';
 import { articlesApi } from '../services/api';
 import { useReaderPreferences } from '../hooks/useReaderPreferences';
@@ -18,8 +18,10 @@ const themeLabels: Record<string, string> = {
 
 export function ReaderPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { fontSize, theme, resolvedTheme, increaseFontSize, decreaseFontSize, cycleTheme, canIncrease, canDecrease } =
     useReaderPreferences();
   const progress = useReadingProgress();
@@ -36,6 +38,24 @@ export function ReaderPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleToggleFavorite = async () => {
+    if (!article || !id) return;
+    await articlesApi.toggleFavorite(id);
+    setArticle({ ...article, isFavorite: !article.isFavorite });
+  };
+
+  const handleArchive = async () => {
+    if (!id) return;
+    await articlesApi.archive(id);
+    navigate('/');
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    await articlesApi.delete(id);
+    navigate('/');
+  };
 
   if (loading) {
     return (
@@ -101,6 +121,49 @@ export function ReaderPage() {
           <button onClick={cycleTheme} title="Toggle theme">
             {themeLabels[theme]}
           </button>
+          <span style={{ borderLeft: `1px solid ${resolvedTheme === 'dark' ? '#555' : '#ccc'}`, height: '1.2em' }} />
+          <button
+            onClick={handleToggleFavorite}
+            title={article.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              padding: '0.1rem 0.25rem',
+              color: article.isFavorite ? '#f5a623' : colors.metaColor,
+            }}
+          >
+            {article.isFavorite ? '\u2605' : '\u2606'}
+          </button>
+          <button
+            onClick={handleArchive}
+            title={article.isArchived ? 'Unarchive' : 'Archive'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              padding: '0.1rem 0.25rem',
+              color: colors.metaColor,
+            }}
+          >
+            {article.isArchived ? 'Unarchive' : 'Archive'}
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            title="Delete article"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              padding: '0.1rem 0.25rem',
+              color: '#d32f2f',
+            }}
+          >
+            Delete
+          </button>
         </div>
         <span style={{ color: colors.metaColor }}>{progress}%</span>
       </div>
@@ -125,6 +188,9 @@ export function ReaderPage() {
               marginBottom: '0.5rem',
             }}
           >
+            {article.isFavorite && (
+              <span style={{ color: '#f5a623', marginRight: '0.4rem' }}>&#9733;</span>
+            )}
             {article.title}
           </h1>
           <div style={{ color: colors.metaColor, fontSize: `${fontSize * 0.8}px` }}>
@@ -159,6 +225,56 @@ export function ReaderPage() {
           </div>
         )}
       </article>
+
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1001,
+          }}
+          onClick={() => setConfirmDelete(false)}
+        >
+          <div
+            style={{
+              background: resolvedTheme === 'dark' ? '#2a2a2a' : '#fff',
+              color: colors.color,
+              padding: '1.5rem',
+              borderRadius: 8,
+              maxWidth: 360,
+              width: '90%',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 0.75rem' }}>Delete article?</h3>
+            <p style={{ margin: '0 0 1.25rem', color: colors.metaColor }}>
+              This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDelete(false)}>Cancel</button>
+              <button
+                onClick={handleDelete}
+                style={{
+                  background: '#d32f2f',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

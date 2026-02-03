@@ -29,12 +29,20 @@ public class ArticlesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<Article>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var result = await _repository.GetPagedByUserAsync(CurrentUserId, page, pageSize);
+        var articleStatus = status?.ToLowerInvariant() switch
+        {
+            "archived" => ArticleStatus.Archived,
+            "favorites" => ArticleStatus.Favorites,
+            _ => ArticleStatus.Default,
+        };
+
+        var result = await _repository.GetPagedByUserAsync(CurrentUserId, page, pageSize, articleStatus);
         return Ok(result);
     }
 
@@ -123,8 +131,8 @@ public class ArticlesController : ControllerBase
         var article = await _repository.GetByIdAsync(id, CurrentUserId);
         if (article is null) return NotFound();
 
-        article.IsArchived = true;
-        article.ArchivedAt = DateTime.UtcNow;
+        article.IsArchived = !article.IsArchived;
+        article.ArchivedAt = article.IsArchived ? DateTime.UtcNow : null;
         await _repository.UpdateAsync(article);
         return NoContent();
     }
