@@ -33,14 +33,20 @@ public class ArticleRepository : IArticleRepository
             .ToListAsync();
     }
 
-    public async Task<PagedResult<Article>> GetPagedByUserAsync(string userId, int page, int pageSize)
+    public async Task<PagedResult<Article>> GetPagedByUserAsync(string userId, int page, int pageSize, ArticleStatus status = ArticleStatus.Default)
     {
-        var query = _context.Articles
-            .Where(a => a.UserId == userId && !a.IsArchived)
-            .OrderByDescending(a => a.SavedAt);
+        var query = _context.Articles.Where(a => a.UserId == userId);
 
-        var totalCount = await query.CountAsync();
-        var items = await query
+        query = status switch
+        {
+            ArticleStatus.Archived => query.Where(a => a.IsArchived),
+            ArticleStatus.Favorites => query.Where(a => a.IsFavorite && !a.IsArchived),
+            _ => query.Where(a => !a.IsArchived),
+        };
+
+        var ordered = query.OrderByDescending(a => a.SavedAt);
+        var totalCount = await ordered.CountAsync();
+        var items = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
