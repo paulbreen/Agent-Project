@@ -123,8 +123,16 @@ export const authApi = {
   },
 };
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
 export const articlesApi = {
-  getAll: () => request<Article[]>('/articles'),
+  getAll: (page = 1, pageSize = 20) =>
+    request<PagedResult<Article>>(`/articles?page=${page}&pageSize=${pageSize}`),
   getById: (id: string) => request<Article>(`/articles/${id}`),
   create: (data: CreateArticleRequest) =>
     request<Article>('/articles', {

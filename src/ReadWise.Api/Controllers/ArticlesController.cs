@@ -27,10 +27,15 @@ public class ArticlesController : ControllerBase
         ?? throw new UnauthorizedAccessException();
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Article>>> GetAll()
+    public async Task<ActionResult<PagedResult<Article>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var articles = await _repository.GetAllByUserAsync(CurrentUserId);
-        return Ok(articles);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var result = await _repository.GetPagedByUserAsync(CurrentUserId, page, pageSize);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
