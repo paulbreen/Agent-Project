@@ -7,6 +7,7 @@ using ReadWise.Api.Services;
 using ReadWise.Core.Entities;
 using ReadWise.Core.Interfaces;
 using ReadWise.Infrastructure.Data;
+using ReadWise.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
+builder.Services.AddHttpClient<IArticleParser, SmartReaderArticleParser>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.MaxResponseContentBufferSize = 10 * 1024 * 1024; // 10MB
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("ReadWise/1.0");
+});
 
 var app = builder.Build();
 

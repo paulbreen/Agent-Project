@@ -19,6 +19,12 @@ public class ArticleRepository : IArticleRepository
             .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
     }
 
+    public async Task<Article?> GetByUrlAsync(string url, string userId)
+    {
+        return await _context.Articles
+            .FirstOrDefaultAsync(a => a.Url == url && a.UserId == userId);
+    }
+
     public async Task<IReadOnlyList<Article>> GetAllByUserAsync(string userId)
     {
         return await _context.Articles

@@ -11,6 +11,9 @@ public class Article
     public string? Excerpt { get; set; }
     public string? ImageUrl { get; set; }
     public string? Domain { get; set; }
+    public int WordCount { get; set; }
+    public int EstimatedReadingTimeMinutes { get; set; }
+    public bool IsContentParsed { get; set; }
     public bool IsRead { get; set; }
     public bool IsArchived { get; set; }
     public bool IsFavorite { get; set; }

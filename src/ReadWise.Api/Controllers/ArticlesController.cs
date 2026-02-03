@@ -13,10 +13,12 @@ namespace ReadWise.Api.Controllers;
 public class ArticlesController : ControllerBase
 {
     private readonly IArticleRepository _repository;
+    private readonly IArticleParser _parser;
 
-    public ArticlesController(IArticleRepository repository)
+    public ArticlesController(IArticleRepository repository, IArticleParser parser)
     {
         _repository = repository;
+        _parser = parser;
     }
 
     private string CurrentUserId =>
@@ -42,13 +44,49 @@ public class ArticlesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Article>> Create([FromBody] CreateArticleRequest request)
     {
+        // Validate URL format
+        if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != "http" && uri.Scheme != "https"))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid URL",
+                Detail = "The URL must be a valid HTTP or HTTPS address.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
+        var userId = CurrentUserId;
+
+        // Check for duplicate — update existing if found
+        var existing = await _repository.GetByUrlAsync(request.Url, userId);
+        if (existing is not null)
+        {
+            return Ok(existing);
+        }
+
+        var domain = uri.Host.Replace("www.", "");
+
+        // Parse article content
+        var parsed = await _parser.ParseAsync(request.Url);
+
         var article = new Article
         {
             Id = Guid.NewGuid(),
-            UserId = CurrentUserId,
+            UserId = userId,
             Url = request.Url,
-            Title = request.Title ?? request.Url,
-            SavedAt = DateTime.UtcNow
+            Title = parsed?.Title ?? request.Url,
+            Author = parsed?.Author,
+            Content = parsed?.Content,
+            Excerpt = parsed?.Excerpt,
+            ImageUrl = parsed?.ImageUrl,
+            Domain = domain,
+            WordCount = parsed?.WordCount ?? 0,
+            EstimatedReadingTimeMinutes = parsed is not null
+                ? Math.Max(1, (int)Math.Ceiling(parsed.WordCount / 200.0))
+                : 0,
+            IsContentParsed = parsed is not null,
+            SavedAt = DateTime.UtcNow,
         };
 
         await _repository.AddAsync(article);
