@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReadWise.Core.Entities;
 using ReadWise.Core.Interfaces;
@@ -5,6 +8,7 @@ using ReadWise.Core.Interfaces;
 namespace ReadWise.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ArticlesController : ControllerBase
 {
@@ -15,8 +19,10 @@ public class ArticlesController : ControllerBase
         _repository = repository;
     }
 
-    // TODO: Replace with actual authenticated user ID once auth is implemented
-    private static string CurrentUserId => "anonymous";
+    private string CurrentUserId =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+        ?? throw new UnauthorizedAccessException();
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<Article>>> GetAll()

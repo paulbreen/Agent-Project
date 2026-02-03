@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Article } from '../types/article';
 import { articlesApi } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 export function HomePage() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,9 +23,20 @@ export function HomePage() {
     setUrl('');
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <div>
-      <h1>ReadWise</h1>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>ReadWise</h1>
+        <div>
+          <span>{user?.email}</span>
+          <button onClick={handleLogout} style={{ marginLeft: '1rem' }}>Log out</button>
+        </div>
+      </header>
       <form onSubmit={handleSave}>
         <input
           type="url"

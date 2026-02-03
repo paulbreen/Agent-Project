@@ -1,4 +1,10 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using ReadWise.Api.Services;
+using ReadWise.Core.Entities;
 using ReadWise.Core.Interfaces;
 using ReadWise.Infrastructure.Data;
 
@@ -20,6 +26,42 @@ else
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
+// Identity
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 8;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ReadWiseDbContext>();
+
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+builder.Services.Configure<JwtSettings>(jwtSettings);
+
+var secret = jwtSettings["Secret"] ?? "ReadWise-Dev-Secret-Key-Change-In-Production-Min32Chars!";
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"] ?? "ReadWise",
+            ValidAudience = jwtSettings["Audience"] ?? "ReadWise",
+            IssuerSigningKey = key,
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
 
 var app = builder.Build();
@@ -28,13 +70,14 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 
-    // Auto-migrate in development
+    // Auto-create database in development
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ReadWiseDbContext>();
     db.Database.EnsureCreated();
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

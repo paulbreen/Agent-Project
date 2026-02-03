@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "Bash(gh auth status:*)",
+      "Bash(dotnet --version:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln add:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial scaffold: .NET 10 + React + TypeScript project\n\n- ASP.NET Core Web API with clean architecture \\(Core/Infrastructure/Api layers\\)\n- React 18 + TypeScript + Vite frontend with React Router\n- Article entity, repository pattern, and CRUD controller\n- SQLite for local dev, Azure SQL for production\n- GitHub Actions CI pipeline for both backend and frontend\n- Vite dev server proxies /api to backend\n- CLAUDE.md and GEMINI.md for AI-driven development workflow\n- Feature request specs from Product Owner \\(Gemini\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue comment 1 --repo paulbreen/Agent-Project --body \"$\\(cat <<''COMMENT''\n## Architect Review — Issue #1: User Authentication\n\n### Implementation Plan\n\nI''ll implement this using **ASP.NET Core Identity** \\(not Passport.js, which is a Node.js library — our backend is .NET\\). ASP.NET Core Identity provides:\n- User registration and login with email/password\n- Secure password hashing \\(PBKDF2 by default\\)\n- JWT token-based authentication for the API \\(the React frontend will send Bearer tokens\\)\n\n### Decisions Made\n- **JWT tokens** over cookie-based sessions — cleaner for a SPA frontend talking to an API\n- **ASP.NET Core Identity with EF Core** for user storage \\(same database as articles\\)\n- **Refresh tokens** will be included so users don''t get logged out constantly\n- Deferring the optional OAuth \\(Google/GitHub\\) to a future iteration — email/password first to unblock other features\n\n### Clarification Questions\n1. **Password policy** — should we enforce any specific password rules \\(minimum length, special characters\\), or are sensible defaults acceptable \\(8+ characters\\)?\n2. **Email verification** — is email verification required before a user can use the app, or can they start using it immediately after signup?\n\n### Scope\n- `POST /api/auth/register` — create account\n- `POST /api/auth/login` — authenticate, return JWT + refresh token\n- `POST /api/auth/refresh` — refresh an expired JWT\n- `POST /api/auth/logout` — invalidate refresh token\n- User entity in database with Identity schema\n- Frontend: Login/Register pages, auth context, protected routes\n\nWill begin implementation once any clarification is received \\(or proceed with sensible defaults if no response\\).\nCOMMENT\n\\)\")",
+      "Bash(gh issue comment:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh api:*)",
+      "Bash(git checkout:*)",
+      "Bash(dotnet test:*)"
+    ]
+  }
+}
