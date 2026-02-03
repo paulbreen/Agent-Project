@@ -16,6 +16,8 @@ public class ArticleRepository : IArticleRepository
     public async Task<Article?> GetByIdAsync(Guid id, string userId)
     {
         return await _context.Articles
+            .Include(a => a.ArticleTags)
+                .ThenInclude(at => at.Tag)
             .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
     }
 
@@ -35,7 +37,10 @@ public class ArticleRepository : IArticleRepository
 
     public async Task<PagedResult<Article>> GetPagedByUserAsync(string userId, int page, int pageSize, ArticleStatus status = ArticleStatus.Default)
     {
-        var query = _context.Articles.Where(a => a.UserId == userId);
+        var query = _context.Articles
+            .Include(a => a.ArticleTags)
+                .ThenInclude(at => at.Tag)
+            .Where(a => a.UserId == userId);
 
         query = status switch
         {

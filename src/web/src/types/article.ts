@@ -1,3 +1,14 @@
+export interface Tag {
+  id: string;
+  name: string;
+}
+
+export interface ArticleTag {
+  articleId: string;
+  tagId: string;
+  tag: Tag;
+}
+
 export interface Article {
   id: string;
   userId: string;
@@ -17,6 +28,7 @@ export interface Article {
   savedAt: string;
   readAt?: string;
   archivedAt?: string;
+  articleTags?: ArticleTag[];
 }
 
 export interface CreateArticleRequest {

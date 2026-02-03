@@ -1,4 +1,4 @@
-import type { Article, CreateArticleRequest } from '../types/article';
+import type { Article, CreateArticleRequest, Tag } from '../types/article';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
 
 const BASE_URL = '/api';
@@ -150,4 +150,16 @@ export const articlesApi = {
     request<void>(`/articles/${id}/archive`, { method: 'PATCH' }),
   toggleFavorite: (id: string) =>
     request<void>(`/articles/${id}/favorite`, { method: 'PATCH' }),
+  setTags: (id: string, tags: string[]) =>
+    request<Tag[]>(`/articles/${id}/tags`, {
+      method: 'PUT',
+      body: JSON.stringify({ tags }),
+    }),
+  getTags: (id: string) =>
+    request<Tag[]>(`/articles/${id}/tags`),
+};
+
+export const tagsApi = {
+  getAll: () => request<Tag[]>('/tags'),
+  delete: (id: string) => request<void>(`/tags/${id}`, { method: 'DELETE' }),
 };

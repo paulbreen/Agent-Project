@@ -20,4 +20,6 @@ public class Article
     public DateTime SavedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReadAt { get; set; }
     public DateTime? ArchivedAt { get; set; }
+
+    public ICollection<ArticleTag> ArticleTags { get; set; } = [];
 }

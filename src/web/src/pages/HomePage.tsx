@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { Article } from '../types/article';
+import type { Article, Tag } from '../types/article';
 import { articlesApi } from '../services/api';
 import { useAuth } from '../hooks/useAuthHook';
+import { TagEditor } from '../components/TagEditor';
 
 type StatusTab = 'default' | 'archived' | 'favorites';
 
@@ -111,6 +112,22 @@ export function HomePage() {
     setConfirmDeleteId(null);
   };
 
+  const getArticleTags = (article: Article): Tag[] => {
+    return (article.articleTags ?? [])
+      .map((at) => at.tag)
+      .filter(Boolean);
+  };
+
+  const handleTagsChange = (articleId: string, newTags: Tag[]) => {
+    setArticles((prev) =>
+      prev.map((a) =>
+        a.id === articleId
+          ? { ...a, articleTags: newTags.map((t) => ({ articleId, tagId: t.id, tag: t })) }
+          : a,
+      ),
+    );
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
       month: 'short',
@@ -203,39 +220,48 @@ export function HomePage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                  <Link
-                    to={`/read/${article.id}`}
-                    style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: '1.1rem',
-                        marginBottom: '0.25rem',
-                      }}
+                  <div style={{ flex: 1 }}>
+                    <Link
+                      to={`/read/${article.id}`}
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
                     >
-                      {article.isFavorite && (
-                        <span style={{ color: '#f5a623', marginRight: '0.4rem' }}>&#9733;</span>
-                      )}
-                      {article.title}
-                    </div>
-                    <div style={{ color: '#666', fontSize: '0.85rem' }}>
-                      {article.domain}
-                      {article.estimatedReadingTimeMinutes > 0 && (
-                        <> &middot; {article.estimatedReadingTimeMinutes} min read</>
-                      )}
-                      {!article.isContentParsed && <> &middot; Link only</>}
-                      <> &middot; {formatDate(article.savedAt)}</>
-                    </div>
-                    {article.excerpt && (
                       <div
-                        style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem' }}
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '1.1rem',
+                          marginBottom: '0.25rem',
+                        }}
                       >
-                        {article.excerpt.slice(0, 150)}
-                        {article.excerpt.length > 150 && '...'}
+                        {article.isFavorite && (
+                          <span style={{ color: '#f5a623', marginRight: '0.4rem' }}>&#9733;</span>
+                        )}
+                        {article.title}
                       </div>
-                    )}
-                  </Link>
+                      <div style={{ color: '#666', fontSize: '0.85rem' }}>
+                        {article.domain}
+                        {article.estimatedReadingTimeMinutes > 0 && (
+                          <> &middot; {article.estimatedReadingTimeMinutes} min read</>
+                        )}
+                        {!article.isContentParsed && <> &middot; Link only</>}
+                        <> &middot; {formatDate(article.savedAt)}</>
+                      </div>
+                      {article.excerpt && (
+                        <div
+                          style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem' }}
+                        >
+                          {article.excerpt.slice(0, 150)}
+                          {article.excerpt.length > 150 && '...'}
+                        </div>
+                      )}
+                    </Link>
+                    <div style={{ marginTop: '0.35rem' }}>
+                      <TagEditor
+                        articleId={article.id}
+                        tags={getArticleTags(article)}
+                        onTagsChange={(newTags) => handleTagsChange(article.id, newTags)}
+                      />
+                    </div>
+                  </div>
 
                   {/* Action buttons */}
                   <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexShrink: 0 }}>
