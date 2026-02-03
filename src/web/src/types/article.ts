@@ -8,6 +8,9 @@ export interface Article {
   excerpt?: string;
   imageUrl?: string;
   domain?: string;
+  wordCount: number;
+  estimatedReadingTimeMinutes: number;
+  isContentParsed: boolean;
   isRead: boolean;
   isArchived: boolean;
   isFavorite: boolean;

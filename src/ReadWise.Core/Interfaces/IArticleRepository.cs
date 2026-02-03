@@ -5,6 +5,7 @@ namespace ReadWise.Core.Interfaces;
 public interface IArticleRepository
 {
     Task<Article?> GetByIdAsync(Guid id, string userId);
+    Task<Article?> GetByUrlAsync(string url, string userId);
     Task<IReadOnlyList<Article>> GetAllByUserAsync(string userId);
     Task<Article> AddAsync(Article article);
     Task UpdateAsync(Article article);
