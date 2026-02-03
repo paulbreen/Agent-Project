@@ -23,7 +23,7 @@ dotnet build                                          # Build entire solution
 dotnet test                                           # Run all tests
 dotnet test --filter "FullyQualifiedName~ClassName"   # Run single test class
 dotnet test --filter "FullyQualifiedName~ClassName.MethodName"  # Single test
-dotnet watch --project src/ReadWise.Api               # Run API with hot reload (https://localhost:5001)
+dotnet watch --project src/ReadWise.Api               # Run API with hot reload (https://localhost:7073)
 dotnet format                                         # Format code
 dotnet ef migrations add Name --project src/ReadWise.Infrastructure --startup-project src/ReadWise.Api
 dotnet ef database update --startup-project src/ReadWise.Api
