@@ -11,7 +11,11 @@ using ReadWise.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddOpenApi();
 
 // Database - SQLite for development, SQL Server for production
@@ -64,6 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddHttpClient<IArticleParser, SmartReaderArticleParser>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import type { Article } from '../types/article';
+import type { Article, Tag } from '../types/article';
 import { articlesApi } from '../services/api';
 import { useReaderPreferences } from '../hooks/useReaderPreferences';
 import { useReadingProgress } from '../hooks/useReadingProgress';
+import { TagEditor } from '../components/TagEditor';
 
 const themeStyles = {
   light: { background: '#ffffff', color: '#1a1a1a', metaColor: '#666', controlBg: '#f5f5f5' },
@@ -38,6 +39,20 @@ export function ReaderPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const getArticleTags = (): Tag[] => {
+    return (article?.articleTags ?? [])
+      .map((at) => at.tag)
+      .filter(Boolean);
+  };
+
+  const handleTagsChange = (newTags: Tag[]) => {
+    if (!article) return;
+    setArticle({
+      ...article,
+      articleTags: newTags.map((t) => ({ articleId: article.id, tagId: t.id, tag: t })),
+    });
+  };
 
   const handleToggleFavorite = async () => {
     if (!article || !id) return;
@@ -200,6 +215,13 @@ export function ReaderPage() {
             {article.estimatedReadingTimeMinutes > 0 && (
               <span> &middot; {article.estimatedReadingTimeMinutes} min read</span>
             )}
+          </div>
+          <div style={{ marginTop: '0.75rem' }}>
+            <TagEditor
+              articleId={article.id}
+              tags={getArticleTags()}
+              onTagsChange={handleTagsChange}
+            />
           </div>
         </header>
 
