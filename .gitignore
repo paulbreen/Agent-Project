@@ -1,0 +1,32 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+appsettings.Development.json
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Build
+publish/
+out/
+
+# Project-specific
+# TODO: add project-specific ignore patterns here

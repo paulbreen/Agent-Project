@@ -1,0 +1,100 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Restore .NET
+        run: dotnet restore
+
+      - name: Build .NET
+        run: dotnet build --no-restore
+
+      - name: Test .NET
+        run: dotnet test --no-build --verbosity normal
+
+      - name: Install frontend dependencies
+        working-directory: src/web
+        run: npm ci
+
+      - name: Type check frontend
+        working-directory: src/web
+        run: npx tsc --noEmit
+
+      - name: Lint frontend
+        working-directory: src/web
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: src/web
+        run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Publish API
+        run: dotnet publish src/Api/Api.csproj --configuration Release --self-contained --runtime linux-x64 --output ./publish
+
+      - name: Build frontend
+        working-directory: src/web
+        run: npm ci && npm run build
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_APP_SERVICE_NAME }}
+          package: ./publish
+
+      - name: Deploy to Azure Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: src/web/dist
