@@ -46,7 +46,7 @@ dotnet build
 dotnet run --project src/ReadWise.Api
 ```
 
-The API starts at **https://localhost:7073** (HTTPS) and **http://localhost:5287** (HTTP).
+The API starts at **http://localhost:5287**. In development, HTTPS redirection is disabled so the Vite proxy can connect over HTTP.
 
 On first run in development mode, the SQLite database (`readwise.db`) is automatically created in the API project directory.
 
