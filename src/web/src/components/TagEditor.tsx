@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Tag } from '../types/article';
-import { tagsApi } from '../services/api';
+import { tagsApi, articlesApi } from '../services/api';
 
 interface TagEditorProps {
   articleId: string;
@@ -45,7 +45,6 @@ export function TagEditor({ articleId, tags, onTagsChange }: TagEditorProps) {
     if (tags.some((t) => t.name === trimmed)) return;
 
     const newTagNames = [...tags.map((t) => t.name), trimmed];
-    const { articlesApi } = await import('../services/api');
     const updatedTags = await articlesApi.setTags(articleId, newTagNames);
     onTagsChange(updatedTags);
     setInput('');
@@ -54,7 +53,6 @@ export function TagEditor({ articleId, tags, onTagsChange }: TagEditorProps) {
 
   const removeTag = async (name: string) => {
     const newTagNames = tags.filter((t) => t.name !== name).map((t) => t.name);
-    const { articlesApi } = await import('../services/api');
     const updatedTags = await articlesApi.setTags(articleId, newTagNames);
     onTagsChange(updatedTags);
   };

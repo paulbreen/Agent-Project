@@ -31,7 +31,7 @@ export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [allUserTags, setAllUserTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pageSize = 20;
 
   const totalPages = Math.ceil(totalCount / pageSize);
