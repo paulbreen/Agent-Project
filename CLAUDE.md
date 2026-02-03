@@ -12,6 +12,7 @@ This project uses an **AI-driven development workflow**:
 - **Gemini** acts as Product Owner and creates feature requests as GitHub issues on `paulbreen/Agent-Project`.
 - **Claude** acts as System Architect — analyzes each issue, adds clarification comments if requirements are ambiguous, then implements the feature on a branch, opens a PR, and links it to the issue.
 - When picking up a new issue: read it fully, comment with questions if anything is unclear, then implement on a feature branch (`feature/<issue-number>-<short-name>`), and open a PR referencing the issue (`Closes #<number>`).
+- All four initial features must be completed before Gemini creates new feature requests.
 
 ## Common Commands
 
@@ -70,21 +71,43 @@ ReadWise.slnx
 
 - **Controllers** are thin — validate input, call repository/service, return result. Business logic belongs in Core services or domain entities.
 - **Repository pattern** via `IArticleRepository` (defined in Core, implemented in Infrastructure).
+- **Article parser** via `IArticleParser` (defined in Core, implemented in Infrastructure using SmartReader).
 - **Database**: SQLite locally (`readwise.db`, auto-created on startup in dev), Azure SQL in production. Provider is selected in `Program.cs` based on environment.
 - **EF Core migrations** live in the Infrastructure project but need `--startup-project src/ReadWise.Api` to run.
 - API routes follow `/api/[controller]` convention with RESTful verbs.
 - `Program.cs` exposes `public partial class Program` for integration test access via `WebApplicationFactory`.
 
+### Authentication
+
+- **ASP.NET Core Identity** with email/password (8+ chars, no email verification).
+- **JWT access tokens** (15 min) + **refresh tokens** (7 days) with rotation.
+- Endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`.
+- JWT secret in `appsettings.json` (dev only) — production uses Azure Key Vault.
+- All article endpoints require `[Authorize]`. User ID extracted from JWT `sub` claim.
+
+### Article Saving & Content Extraction
+
+- `POST /api/articles` validates URL (HTTP/HTTPS only), checks for duplicates (returns existing), then fetches and parses.
+- **SmartReader** (NuGet) extracts title, author, content HTML, excerpt, lead image, word count.
+- If parsing fails, a stub article is saved with `IsContentParsed = false`.
+- Estimated reading time calculated at ~200 words/minute.
+- HttpClient configured with 30s timeout, 10MB response limit.
+
 ### Frontend Patterns
 
 - **Vite** build tool with React 18+ and TypeScript.
 - **React Router** for client-side routing. Pages in `src/web/src/pages/`, shared components in `src/web/src/components/`.
-- **API client** in `src/web/src/services/api.ts` — centralized fetch wrapper. All backend calls go through this module.
+- **API client** in `src/web/src/services/api.ts` — centralized fetch wrapper with JWT auth headers and automatic token refresh on 401.
+- **AuthProvider** context (`src/web/src/hooks/useAuth.tsx`) manages login state. `ProtectedRoute` component guards authenticated pages.
 - **Types** mirror backend DTOs in `src/web/src/types/`.
+- **Reader preferences** (font size, theme) persisted in localStorage via `useReaderPreferences` hook.
 
-### Authentication
+### Implemented Pages
 
-Not yet implemented. The `ArticlesController` uses a placeholder `CurrentUserId`. Auth will be added as a feature request — expected to use Azure AD / Microsoft Identity.
+- `/login` — Login form
+- `/register` — Registration form
+- `/` — Article list with save form, pagination (20/page), and logout
+- `/read/:id` — Reader view with font controls, theme toggle (light/dark/system), and reading progress bar
 
 ## Azure Deployment
 
@@ -100,3 +123,4 @@ Not yet implemented. The `ArticlesController` uses a placeholder `CurrentUserId`
 - Frontend components that fetch data should use the centralized API client, not direct `fetch` calls.
 - Feature branches follow the pattern: `feature/<issue-number>-<short-description>`.
 - PRs reference the GitHub issue with `Closes #<number>` in the description.
+- Always verify builds (`dotnet build` + `npx tsc --noEmit`) and tests (`dotnet test`) pass before committing.
