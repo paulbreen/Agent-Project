@@ -1,14 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Article, Tag } from '../types/article';
-import { articlesApi } from '../services/api';
+import { articlesApi, tagsApi } from '../services/api';
 import { useAuth } from '../hooks/useAuthHook';
 import { TagEditor } from '../components/TagEditor';
 
-type StatusTab = 'default' | 'archived' | 'favorites';
+type StatusTab = 'default' | 'unread' | 'archived' | 'favorites';
 
 const tabs: { key: StatusTab; label: string }[] = [
-  { key: 'default', label: 'Reading List' },
+  { key: 'default', label: 'All' },
+  { key: 'unread', label: 'Unread' },
   { key: 'favorites', label: 'Favorites' },
   { key: 'archived', label: 'Archived' },
 ];
@@ -26,16 +27,36 @@ export function HomePage() {
   const [activeTab, setActiveTab] = useState<StatusTab>('default');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allUserTags, setAllUserTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const pageSize = 20;
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // Load user tags for filter
+  useEffect(() => {
+    tagsApi.getAll().then(setAllUserTags);
+  }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
+
   const fetchArticles = useCallback(
-    (p: number, tab: StatusTab) => {
+    (p: number, tab: StatusTab, search: string, tags: string[]) => {
       setLoading(true);
       const status = tab === 'default' ? undefined : tab;
       articlesApi
-        .getAll(p, pageSize, status)
+        .getAll(p, pageSize, status, search || undefined, tags.length > 0 ? tags : undefined)
         .then((result) => {
           setArticles(result.items);
           setTotalCount(result.totalCount);
@@ -46,13 +67,20 @@ export function HomePage() {
   );
 
   useEffect(() => {
-    fetchArticles(page, activeTab);
-  }, [page, activeTab, fetchArticles]);
+    fetchArticles(page, activeTab, searchQuery, selectedTags);
+  }, [page, activeTab, searchQuery, selectedTags, fetchArticles]);
 
   const handleTabChange = (tab: StatusTab) => {
     setActiveTab(tab);
     setPage(1);
     setMenuOpenId(null);
+  };
+
+  const toggleTagFilter = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
+    );
+    setPage(1);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -64,8 +92,11 @@ export function HomePage() {
       await articlesApi.create({ url: url.trim() });
       setUrl('');
       setActiveTab('default');
+      setSearchInput('');
+      setSearchQuery('');
+      setSelectedTags([]);
       setPage(1);
-      fetchArticles(1, 'default');
+      fetchArticles(1, 'default', '', []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save article');
     } finally {
@@ -126,6 +157,8 @@ export function HomePage() {
           : a,
       ),
     );
+    // Refresh the tag list for filters
+    tagsApi.getAll().then(setAllUserTags);
   };
 
   const formatDate = (dateString: string) => {
@@ -169,6 +202,71 @@ export function HomePage() {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
+      {/* Search bar */}
+      <input
+        type="text"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        placeholder="Search articles..."
+        style={{
+          width: '100%',
+          padding: '0.5rem',
+          marginBottom: '0.75rem',
+          border: '1px solid #ddd',
+          borderRadius: 4,
+          fontSize: '0.9rem',
+          boxSizing: 'border-box',
+        }}
+      />
+
+      {/* Tag filter chips */}
+      {allUserTags.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.3rem',
+            marginBottom: '0.75rem',
+          }}
+        >
+          {allUserTags.map((tag) => {
+            const isSelected = selectedTags.includes(tag.name);
+            return (
+              <button
+                key={tag.id}
+                onClick={() => toggleTagFilter(tag.name)}
+                style={{
+                  background: isSelected ? '#1a73e8' : '#e8f0fe',
+                  color: isSelected ? '#fff' : '#1a73e8',
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {tag.name}
+              </button>
+            );
+          })}
+          {selectedTags.length > 0 && (
+            <button
+              onClick={() => { setSelectedTags([]); setPage(1); }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#999',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                padding: '0.2rem 0.4rem',
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Status tabs */}
       <div
         style={{
@@ -202,9 +300,12 @@ export function HomePage() {
         <p>Loading...</p>
       ) : articles.length === 0 ? (
         <p style={{ color: '#888' }}>
-          {activeTab === 'default' && 'No saved articles yet. Paste a URL above to get started.'}
-          {activeTab === 'archived' && 'No archived articles.'}
-          {activeTab === 'favorites' && 'No favorite articles yet.'}
+          {searchQuery || selectedTags.length > 0
+            ? 'No articles match your search or filters.'
+            : activeTab === 'default' ? 'No saved articles yet. Paste a URL above to get started.'
+            : activeTab === 'unread' ? 'No unread articles.'
+            : activeTab === 'archived' ? 'No archived articles.'
+            : 'No favorite articles yet.'}
         </p>
       ) : (
         <>

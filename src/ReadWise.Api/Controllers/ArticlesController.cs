@@ -30,7 +30,9 @@ public class ArticlesController : ControllerBase
     public async Task<ActionResult<PagedResult<Article>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        [FromQuery] string? status = null)
+        [FromQuery] string? status = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? tags = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -39,10 +41,24 @@ public class ArticlesController : ControllerBase
         {
             "archived" => ArticleStatus.Archived,
             "favorites" => ArticleStatus.Favorites,
+            "unread" => ArticleStatus.Unread,
             _ => ArticleStatus.Default,
         };
 
-        var result = await _repository.GetPagedByUserAsync(CurrentUserId, page, pageSize, articleStatus);
+        var tagList = !string.IsNullOrWhiteSpace(tags)
+            ? tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()
+            : null;
+
+        var query = new ArticleQuery(
+            UserId: CurrentUserId,
+            Page: page,
+            PageSize: pageSize,
+            Status: articleStatus,
+            Search: search,
+            Tags: tagList
+        );
+
+        var result = await _repository.GetPagedAsync(query);
         return Ok(result);
     }
 

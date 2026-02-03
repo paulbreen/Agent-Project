@@ -131,9 +131,11 @@ export interface PagedResult<T> {
 }
 
 export const articlesApi = {
-  getAll: (page = 1, pageSize = 20, status?: string) => {
+  getAll: (page = 1, pageSize = 20, status?: string, search?: string, tags?: string[]) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (status) params.set('status', status);
+    if (search) params.set('search', search);
+    if (tags && tags.length > 0) params.set('tags', tags.join(','));
     return request<PagedResult<Article>>(`/articles?${params}`);
   },
   getById: (id: string) => request<Article>(`/articles/${id}`),

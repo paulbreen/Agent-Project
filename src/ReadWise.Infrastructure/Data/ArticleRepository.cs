@@ -35,28 +35,47 @@ public class ArticleRepository : IArticleRepository
             .ToListAsync();
     }
 
-    public async Task<PagedResult<Article>> GetPagedByUserAsync(string userId, int page, int pageSize, ArticleStatus status = ArticleStatus.Default)
+    public async Task<PagedResult<Article>> GetPagedAsync(ArticleQuery q)
     {
         var query = _context.Articles
             .Include(a => a.ArticleTags)
                 .ThenInclude(at => at.Tag)
-            .Where(a => a.UserId == userId);
+            .Where(a => a.UserId == q.UserId);
 
-        query = status switch
+        // Status filter
+        query = q.Status switch
         {
             ArticleStatus.Archived => query.Where(a => a.IsArchived),
             ArticleStatus.Favorites => query.Where(a => a.IsFavorite && !a.IsArchived),
+            ArticleStatus.Unread => query.Where(a => !a.IsRead && !a.IsArchived),
             _ => query.Where(a => !a.IsArchived),
         };
+
+        // Search filter (title and excerpt)
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            var search = q.Search.Trim();
+            query = query.Where(a =>
+                a.Title.Contains(search) ||
+                (a.Excerpt != null && a.Excerpt.Contains(search)));
+        }
+
+        // Tag filter (OR logic — articles matching ANY of the specified tags)
+        if (q.Tags is { Count: > 0 })
+        {
+            var tagNames = q.Tags.Select(t => t.ToLowerInvariant()).ToList();
+            query = query.Where(a =>
+                a.ArticleTags.Any(at => tagNames.Contains(at.Tag.Name)));
+        }
 
         var ordered = query.OrderByDescending(a => a.SavedAt);
         var totalCount = await ordered.CountAsync();
         var items = await ordered
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((q.Page - 1) * q.PageSize)
+            .Take(q.PageSize)
             .ToListAsync();
 
-        return new PagedResult<Article>(items, totalCount, page, pageSize);
+        return new PagedResult<Article>(items, totalCount, q.Page, q.PageSize);
     }
 
     public async Task<Article> AddAsync(Article article)
