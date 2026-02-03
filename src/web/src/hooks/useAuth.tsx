@@ -1,18 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { UserInfo } from '../types/auth';
+import { AuthContext } from './AuthContext';
 import { authApi, getStoredToken, clearTokens } from '../services/api';
-
-interface AuthContextType {
-  user: UserInfo | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import type { UserInfo } from '../types/auth';
 
 function parseJwt(token: string): { sub: string; email: string } | null {
   try {
@@ -33,14 +23,7 @@ function getUserFromToken(): UserInfo | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const existingUser = getUserFromToken();
-    setUser(existingUser);
-    setIsLoading(false);
-  }, []);
+  const [user, setUser] = useState<UserInfo | null>(() => getUserFromToken());
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
@@ -60,15 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}
+      value={{ user, isAuthenticated: !!user, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
 }

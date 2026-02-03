@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -25,27 +25,25 @@ function savePrefs(prefs: ReaderPreferences) {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
 }
 
-function getResolvedTheme(theme: ThemeMode): 'light' | 'dark' {
-  if (theme !== 'system') return theme;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 export function useReaderPreferences() {
   const [prefs, setPrefs] = useState(loadPrefs);
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
-    getResolvedTheme(prefs.theme)
+  const [systemIsDark, setSystemIsDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
   );
 
+  // Subscribe to OS theme changes
   useEffect(() => {
-    setResolvedTheme(getResolvedTheme(prefs.theme));
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
-    if (prefs.theme === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = (e: MediaQueryListEvent) => setResolvedTheme(e.matches ? 'dark' : 'light');
-      mq.addEventListener('change', handler);
-      return () => mq.removeEventListener('change', handler);
-    }
-  }, [prefs.theme]);
+  // Derive resolved theme from prefs + system state — no effect needed
+  const resolvedTheme = useMemo<'light' | 'dark'>(() => {
+    if (prefs.theme !== 'system') return prefs.theme;
+    return systemIsDark ? 'dark' : 'light';
+  }, [prefs.theme, systemIsDark]);
 
   const update = useCallback((partial: Partial<ReaderPreferences>) => {
     setPrefs((prev) => {

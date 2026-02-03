@@ -23,7 +23,9 @@
       "Bash(dotnet test:*)",
       "Bash(gh issue close:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd article saving with content extraction from URLs\n\n- SmartReader \\(Mozilla Readability port\\) for extracting article content\n- URL validation \\(HTTP/HTTPS only\\), domain extraction\n- Duplicate detection: returns existing article if same URL saved again\n- Graceful degradation: saves stub article if parsing fails \\(IsContentParsed flag\\)\n- Word count + estimated reading time \\(200 wpm\\) calculated at save time\n- HttpClient configured with 30s timeout and 10MB limit\n- Article entity extended with WordCount, EstimatedReadingTimeMinutes, IsContentParsed\n- IArticleParser interface in Core, SmartReaderArticleParser in Infrastructure\n- Repository: added GetByUrlAsync for duplicate detection\n\nCloses #2\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ]
   }
 }

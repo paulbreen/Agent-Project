@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Article } from '../types/article';
 import { articlesApi } from '../services/api';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuthHook';
 
 export function HomePage() {
   const { user, logout } = useAuth();
