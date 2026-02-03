@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { Tag } from '../types/article';
 import { tagsApi, articlesApi } from '../services/api';
 
@@ -11,7 +11,6 @@ interface TagEditorProps {
 export function TagEditor({ articleId, tags, onTagsChange }: TagEditorProps) {
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState('');
-  const [suggestions, setSuggestions] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,19 +22,13 @@ export function TagEditor({ articleId, tags, onTagsChange }: TagEditorProps) {
     }
   }, [editing]);
 
-  useEffect(() => {
-    if (!input.trim()) {
-      setSuggestions([]);
-      setHighlightIndex(-1);
-      return;
-    }
+  const suggestions = useMemo(() => {
+    if (!input.trim()) return [];
     const lower = input.toLowerCase();
     const currentNames = new Set(tags.map((t) => t.name));
-    const filtered = allTags
+    return allTags
       .filter((t) => t.name.includes(lower) && !currentNames.has(t.name))
       .slice(0, 5);
-    setSuggestions(filtered);
-    setHighlightIndex(-1);
   }, [input, allTags, tags]);
 
   const addTag = async (name: string) => {
@@ -48,7 +41,7 @@ export function TagEditor({ articleId, tags, onTagsChange }: TagEditorProps) {
     const updatedTags = await articlesApi.setTags(articleId, newTagNames);
     onTagsChange(updatedTags);
     setInput('');
-    setSuggestions([]);
+    setHighlightIndex(-1);
   };
 
   const removeTag = async (name: string) => {
